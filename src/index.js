@@ -1,6 +1,6 @@
 require('file-loader?name=[name].[ext]!./index.html');
 require('./style.css');
-require('file-loader?name=[name].[ext]!./images/stars.png');
+require('file-loader?name=[name].[ext]!./images/stars_small.png');
 require('file-loader?name=[name].[ext]!./images/player.png');
 // TODO: Figure out better way of loading images
 
@@ -18,7 +18,7 @@ class ImageController {
     }
 
     getImage(name) {
-        return this.images[name];
+        return this.images[name] || false;
     }
 
     logImage(name) {
@@ -62,17 +62,28 @@ class Background extends Drawable {
     }
 
     draw() {
-        this.x += this.speed;
+        this.context.fillStyle = 'black'
+        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.x += this.speed.x;
+        this.y += this.speed.y;
 
         const bg = imageController.getImage('bg');
-
-        this.context.drawImage(bg, this.x, this.y);
-        this.context.drawImage(bg, this.x - this.canvas.width, this.y);
-
-        if(this.x >= this.canvas.width)
+        console.log(bg.width, bg.height);
+        for(let i = -bg.width; i < this.canvas.width; i += bg.width) {
+            for(let j = -bg.height; j < this.canvas.height; j += bg.height) {
+                this.context.drawImage(bg, this.x + i, this.y + j);
+            }
+        }
+        if(this.x > bg.width)
             this.x = 0;
+        if(this.x < 0)
+            this.x = bg.width;
+        if(this.y > bg.height)
+            this.y = 0;
+        if(this.y < 0)
+            this.y = bg.height;
     }
-
 }
 
 
@@ -87,9 +98,7 @@ class Game {
         if(this.bgCanvas.getContext) {
             this.bgContext = this.bgCanvas.getContext('2d');
 
-            // this.background = new Entity(0, 0, 1, this.bgCanvas, this.bgContext);
-            this.background = new Background(0, 0, 1, this.bgCanvas, this.bgContext);
-
+            this.background = new Background(0, 0, {x: -3, y: 1}, this.bgCanvas, this.bgContext);
             this.player = new Drawable(128, 128, this.bgCanvas, this.bgContext);
 
             return true;
@@ -112,7 +121,10 @@ class Game {
 // Initialize the game
 //
 const imageController = new ImageController();
-imageController.setImage('bg', 'stars.png');
+imageController.setImage('bg', 'stars_small.png');
+// imageController.setImage('bg', 'https://source.unsplash.com/CzigtQ8gPi4/1500x1500');
+
+
 imageController.setImage('player', 'player.png');
 
 const game = new Game();
