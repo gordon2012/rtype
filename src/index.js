@@ -6,7 +6,7 @@ require('file-loader?name=[name].[ext]!./images/debug.png');
 // TODO: Figure out better way of loading images
 
 
-// Images, using ES6 class
+// Object responsible for images
 //
 class ImageController {
     constructor() {
@@ -26,24 +26,8 @@ class ImageController {
         return this.images[name] || false;
     }
 
-    logImage(name) {
-        console.log(this.images[name]);
-    }
-
     isLoaded() {
-        // console.log('IS LOADED');
-
-
-        // var keys = Object.keys(this.images);
-        // var check = false;
-        // check = keys.every((key) => this.loaded.hasOwnProperty(key));
-        // if(!check) console.log(check);
-        // return check;
-
         return Object.keys(this.images).every((key) => this.loaded.hasOwnProperty(key));
-
-
-        // return false;
     }
 }
 
@@ -70,10 +54,7 @@ class Drawable extends Entity {
         this.image = image;
     }
     draw() {
-        // const player = imageController.getImage('player');
-        const player = this.image;
-
-        this.context.drawImage(player, this.x, this.y);
+        this.context.drawImage(this.image, this.x, this.y);
     }
 }
 
@@ -85,39 +66,29 @@ class Background extends Drawable {
     }
 
     draw() {
+        // TODO: Refactor into separate entity
+        //
         this.context.fillStyle = 'black'
         this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        //
+        ////
 
         this.x += this.speed.x;
         this.y += this.speed.y;
 
-        //
-        // const bg = imageController.getImage('bg');
-        const bg = this.image;
-        
-
-
-        // if (bg === undefined) console.log('FALSE');
-        // console.log(bg.width, bg.height);
-
-        // console.log('DRAW BACKGROUND');
-        // this.context.drawImage(bg, this.x, this.y);
-
-        //*
-        for(let i = -bg.width; i < this.canvas.width; i += bg.width) {
-            for(let j = -bg.height; j < this.canvas.height; j += bg.height) {
-                this.context.drawImage(bg, this.x + i, this.y + j);
+        for(let i = -this.image.width; i < this.canvas.width; i += this.image.width) {
+            for(let j = -this.image.height; j < this.canvas.height; j += this.image.height) {
+                this.context.drawImage(this.image, this.x + i, this.y + j);
             }
         }
-        if(this.x > bg.width)
+        if(this.x > this.image.width)
             this.x = 0;
         if(this.x < 0)
-            this.x = bg.width;
-        if(this.y > bg.height)
+            this.x = this.image.width;
+        if(this.y > this.image.height)
             this.y = 0;
         if(this.y < 0)
-            this.y = bg.height;
-        //*/
+            this.y = this.image.height;
     }
 }
 
@@ -130,13 +101,8 @@ class Game {
     }
 
     run() {
-
-
-        // var p = new Promise(() => game.loadImages());
-        // p.then(() => console.log('IMAGES LOADED'));
-
+        // TODO: Load images using Promises?
         this.loadImages();
-
 
         if(this.init()) {
             this.start();
@@ -156,18 +122,13 @@ class Game {
     }
 
     loadImages() {
-        // Init images here?
-        //
         console.log('LOADING IMAGES');
         this.images = new ImageController();
-
-
 
         this.images.setImage('bg', 'stars_small.png');
         this.images.setImage('nasa', 'https://source.unsplash.com/CzigtQ8gPi4/1500x1500');
         this.images.setImage('player', 'player.png');
         this.images.setImage('debug', 'debug.png');
-
     }
 
     start() {
@@ -184,41 +145,11 @@ class Game {
         } else {
             console.log('WAITING FOR IMAGE');
         }
-
-
-
     }
 }
 
 
-// Initialize the game
+// The Game
 //
-// const imageController = new ImageController();
-// imageController.setImage('bg', 'stars_small.png');
-// imageController.setImage('bg', 'https://source.unsplash.com/CzigtQ8gPi4/1500x1500');
-// imageController.setImage('player', 'player.png');
-
-
-
 const game = new Game();
 game.run();
-
-// if(game.init()) {
-    
-//     var images = [
-//         {name: 'bg', url: 'https://source.unsplash.com/CzigtQ8gPi4/1500x1500'},
-//         {name: 'player', url: 'player.png'}
-//     ];
-
-//     Promise.all
-
-
-//     // var p = new Promise((res, rej) => game.loadImages());
-//     // p.then(() => console.log('IMAGES LOADED'));
-
-//     // Promise.resolve(() => game.loadImages())
-//     //     .then(() => console.log('IMAGES LOADED'));
-
-
-//     game.start();
-// }
