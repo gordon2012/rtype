@@ -12,6 +12,14 @@ class ImageController {
     constructor() {
         this.images = {};
         this.loaded = {};
+
+        // new
+        //
+        // this.loadingList = [];
+        this.success = 0;
+        this.fail = 0;
+        this.imageData = {};
+
     }
 
     setImage(name, src) {
@@ -21,14 +29,45 @@ class ImageController {
     }
 
     getImage(name) {
-        console.log(this.images[name]);
-        console.dir(this.images[name]);
+        console.log('LOADING IMAGE', name);
+        // console.log(this.images[name]);
+        // console.dir(this.images[name]);
         return this.images[name] || false;
     }
 
     isLoaded() {
         return Object.keys(this.images).every((key) => this.loaded.hasOwnProperty(key));
     }
+
+    // NEW
+    //
+    fetchImages(list, callback) {
+        list.forEach(e => {
+            var img = new Image();
+
+            img.addEventListener('load', () => {
+                this.success++;
+                console.log(`SUCCESS: ${e} (${this.success})`);
+                if(this.success + this.fail == list.length)
+                    callback();
+            });
+
+            img.addEventListener('error', () => {
+                this.success++;
+                console.log(`FAIL: ${e} (${this.fail})`);
+                if(this.success + this.fail == list.length)
+                    callback();
+            });
+
+            img.src = e;
+            this.imageData[e] = img;
+        });
+    }
+
+    loadImage(path) {
+        return this.imageData[path];
+    }
+
 }
 
 
@@ -102,11 +141,25 @@ class Game {
 
     run() {
         // TODO: Load images using Promises?
-        this.loadImages();
+        //
+        // this.loadImages();
+        //
+        //this.fetchImages();
+        //
+        // This is where the level metadata would be read and the images would be loaded
+        // as needed
 
-        if(this.init()) {
-            this.start();
-        }
+        this.images = new ImageController();
+
+        this.images.fetchImages(['player.png', 'purple.png', 'ijfoie.png'], () => {
+            if(this.init()) {
+                this.start();
+            }
+        });
+
+        // if(this.init()) {
+        //     this.start();
+        // }
     }
 
     init() {
@@ -114,8 +167,19 @@ class Game {
         if(this.bgCanvas.getContext) {
             this.bgContext = this.bgCanvas.getContext('2d');
 
-            this.background = new Background(0, 0, {x: -3, y: 1}, this.bgCanvas, this.bgContext, this.images.getImage('bg'));
-            this.player = new Drawable(128, 128, this.bgCanvas, this.bgContext, this.images.getImage('player'));
+            // this.background = new Background(0, 0, {x: -3, y: 1}, this.bgCanvas, this.bgContext, this.images.getImage('bg'));
+            // this.player = new Drawable(128, 128, this.bgCanvas, this.bgContext, this.images.getImage('player'));
+
+            // new
+            this.background = new Background(0, 0, {x: -3, y: 1}, this.bgCanvas, this.bgContext, this.images.loadImage('purple.png'));
+            this.player = new Drawable(128, 128, this.bgCanvas, this.bgContext, this.images.loadImage('player.png'));
+            //
+
+
+            // new 'unloadable' image
+            // this.fail = new Drawable(64, 64, this.bgCanvas, this.bgContext, this.images.getImage('fail'));
+
+
 
             return true;
         } else return false;
@@ -129,6 +193,14 @@ class Game {
         this.images.setImage('nasa', 'https://source.unsplash.com/CzigtQ8gPi4/1500x1500');
         this.images.setImage('player', 'player.png');
         this.images.setImage('debug', 'debug.png');
+
+        // NEW
+        //
+        this.images.fetchImages(['player.png', 'purple.png', 'ijfoie.png']);
+        //
+
+        // this.images.setImage('fail', 'http://localhost:3000/fail.png');
+
     }
 
     start() {
