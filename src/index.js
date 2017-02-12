@@ -8,39 +8,15 @@ require('file-loader?name=[name].[ext]!./images/debug.png');
 
 // Object responsible for images
 //
+// TODO: Load images using Promises
+//
 class ImageController {
     constructor() {
-        this.images = {};
-        this.loaded = {};
-
-        // new
-        //
-        // this.loadingList = [];
         this.success = 0;
         this.fail = 0;
-        this.imageData = {};
-
+        this.images = {};
     }
 
-    setImage(name, src) {
-        this.images[name] = new Image();
-        this.images[name].src = src;
-        this.images[name].addEventListener('load', () => this.loaded[name] = true);
-    }
-
-    getImage(name) {
-        console.log('LOADING IMAGE', name);
-        // console.log(this.images[name]);
-        // console.dir(this.images[name]);
-        return this.images[name] || false;
-    }
-
-    isLoaded() {
-        return Object.keys(this.images).every((key) => this.loaded.hasOwnProperty(key));
-    }
-
-    // NEW
-    //
     fetchImages(list, callback) {
         list.forEach(e => {
             var img = new Image();
@@ -60,12 +36,12 @@ class ImageController {
             });
 
             img.src = e;
-            this.imageData[e] = img;
+            this.images[e] = img;
         });
     }
 
     loadImage(path) {
-        return this.imageData[path];
+        return this.images[path];
     }
 
 }
@@ -93,7 +69,7 @@ class Drawable extends Entity {
         this.image = image;
     }
     draw() {
-        this.context.drawImage(this.image, this.x, this.y);
+        if(this.image) this.context.drawImage(this.image, this.x, this.y);
     }
 }
 
@@ -110,7 +86,6 @@ class Background extends Drawable {
         this.context.fillStyle = 'black'
         this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
         //
-        ////
 
         this.x += this.speed.x;
         this.y += this.speed.y;
@@ -136,30 +111,16 @@ class Game {
     constructor() {
         // TODO: Find better way to manage canvases, maybe parameters of the constructor? config object?
         this.bgCanvas = document.querySelector('canvas.bg');
-        // Maybe put image loading here? Have imageController be an attribute of this object?
     }
 
     run() {
-        // TODO: Load images using Promises?
-        //
-        // this.loadImages();
-        //
-        //this.fetchImages();
-        //
-        // This is where the level metadata would be read and the images would be loaded
-        // as needed
-
         this.images = new ImageController();
 
-        this.images.fetchImages(['player.png', 'purple.png', 'ijfoie.png'], () => {
+        this.images.fetchImages(['player.png', 'purple.png'], () => {
             if(this.init()) {
                 this.start();
             }
         });
-
-        // if(this.init()) {
-        //     this.start();
-        // }
     }
 
     init() {
@@ -167,40 +128,11 @@ class Game {
         if(this.bgCanvas.getContext) {
             this.bgContext = this.bgCanvas.getContext('2d');
 
-            // this.background = new Background(0, 0, {x: -3, y: 1}, this.bgCanvas, this.bgContext, this.images.getImage('bg'));
-            // this.player = new Drawable(128, 128, this.bgCanvas, this.bgContext, this.images.getImage('player'));
-
-            // new
             this.background = new Background(0, 0, {x: -3, y: 1}, this.bgCanvas, this.bgContext, this.images.loadImage('purple.png'));
             this.player = new Drawable(128, 128, this.bgCanvas, this.bgContext, this.images.loadImage('player.png'));
-            //
-
-
-            // new 'unloadable' image
-            // this.fail = new Drawable(64, 64, this.bgCanvas, this.bgContext, this.images.getImage('fail'));
-
-
 
             return true;
         } else return false;
-    }
-
-    loadImages() {
-        console.log('LOADING IMAGES');
-        this.images = new ImageController();
-
-        this.images.setImage('bg', 'purple.png');
-        this.images.setImage('nasa', 'https://source.unsplash.com/CzigtQ8gPi4/1500x1500');
-        this.images.setImage('player', 'player.png');
-        this.images.setImage('debug', 'debug.png');
-
-        // NEW
-        //
-        this.images.fetchImages(['player.png', 'purple.png', 'ijfoie.png']);
-        //
-
-        // this.images.setImage('fail', 'http://localhost:3000/fail.png');
-
     }
 
     start() {
@@ -211,12 +143,8 @@ class Game {
     animate() {
         window.requestAnimationFrame(() => this.animate());
         
-        if(this.images.isLoaded()) {
-            this.background.draw();
-            this.player.draw();
-        } else {
-            console.log('WAITING FOR IMAGE');
-        }
+        this.background.draw();
+        this.player.draw();
     }
 }
 
