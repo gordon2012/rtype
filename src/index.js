@@ -1,6 +1,6 @@
 require('file-loader?name=[name].[ext]!./index.html');
 require('./style.css');
-require('file-loader?name=[name].[ext]!./images/stars_small.png');
+require('file-loader?name=[name].[ext]!./images/purple.png');
 require('file-loader?name=[name].[ext]!./images/player.png');
 require('file-loader?name=[name].[ext]!./images/debug.png');
 // TODO: Figure out better way of loading images
@@ -125,7 +125,7 @@ class Game {
         console.log('LOADING IMAGES');
         this.images = new ImageController();
 
-        this.images.setImage('bg', 'stars_small.png');
+        this.images.setImage('bg', 'purple.png');
         this.images.setImage('nasa', 'https://source.unsplash.com/CzigtQ8gPi4/1500x1500');
         this.images.setImage('player', 'player.png');
         this.images.setImage('debug', 'debug.png');
