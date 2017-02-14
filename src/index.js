@@ -1,9 +1,9 @@
 require('file-loader?name=[name].[ext]!./index.html');
 require('./style.css');
-require('file-loader?name=[name].[ext]!./images/purple.png');
-require('file-loader?name=[name].[ext]!./images/blue.png');
+require('file-loader?name=[name].[ext]!./images/black.png');
 require('file-loader?name=[name].[ext]!./images/player.png');
-require('file-loader?name=[name].[ext]!./images/debug.png');
+require('file-loader?name=[name].[ext]!./images/stars_big.png');
+require('file-loader?name=[name].[ext]!./images/stars_small.png');
 // TODO: Figure out better way of loading images
 
 
@@ -94,8 +94,8 @@ class Background extends Drawable {
     draw() {
         // TODO: Refactor into separate entity
         //
-        this.context.fillStyle = 'black'
-        this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        // this.context.fillStyle = 'black'
+        // this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
         //
 
         this.x += this.speed.x;
@@ -126,7 +126,7 @@ class Game {
     run() {
         this.images = new ImageController();
 
-        this.images.fetchImages(['player.png', 'purple.png'], () => {
+        this.images.fetchImages(['player.png', 'black.png', 'stars_big.png', 'stars_small.png'], () => {
             if(this.init()) {
                 this.start();
             }
@@ -136,10 +136,13 @@ class Game {
     init() {
         console.log('INIT GAME')
 
-        this.background = new Background(0, 0, {x: 1, y: 1}, 'canvas.bg', this.images.loadImage('purple.png'));
+        this.background = new Background(0, 0, {x: 0, y: 0}, 'canvas.bg', this.images.loadImage('black.png'));
+        this.bg2 = new Background(0, 0, {x: -1, y: 0}, 'canvas.bg', this.images.loadImage('stars_big.png'));
+        this.bg3 = new Background(0, 0, {x: -2, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png'));
+
         this.player = new Drawable(128, 128, 'canvas.bg', this.images.loadImage('player.png'));
 
-        return this.background.init() && this.player.init();
+        return this.background.init() && this.player.init(), this.bg2.init(), this.bg3.init();
     }
 
     start() {
@@ -151,6 +154,8 @@ class Game {
         window.requestAnimationFrame(() => this.animate());
         
         this.background.draw();
+        this.bg3.draw();
+        this.bg2.draw();
         this.player.draw();
     }
 }
