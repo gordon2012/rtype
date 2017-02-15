@@ -4,3 +4,15 @@ body {
     justify-content: center;
 
 }
+
+canvas {
+    position: absolute;
+}
+
+.bg {
+    z-index: -2;
+}
+
+.player {
+    z-index: -1;
+}

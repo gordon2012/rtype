@@ -46,6 +46,9 @@ class ImageController {
     }
 }
 
+// TODO: Add separate object that contains the canvas and context so each
+//  image does not have to call getContext('2d') on init
+
 
 // Entity hierarchy. Currently consists of:
 //   - Entity: base object that could be used as an invisible or controller object
@@ -77,6 +80,25 @@ class Drawable extends Entity {
     }
 }
 
+class Player extends Drawable {
+    constructor(x, y, speed, canvas, image) { // TODO: speed as object with acceleration and maxVelocity?
+        super(x, y, canvas, image);
+        this.speed = speed;
+    }
+
+    move() {
+        const [w, h] = [this.image.width, this.image.height]
+        this.context.clearRect(this.x, this.y, w, h);
+
+        this.x += this.speed * (input.right - input.left);
+        this.y += this.speed * (input.down - input.up);
+
+        this.x = Math.min(this.canvas.width - w, Math.max(0, this.x));
+        this.y = Math.min(this.canvas.height - h, Math.max(0, this.y));
+    }
+
+}
+
 class Background extends Drawable {
     constructor(x, y, speed, canvas, image) {
         super(x, y, canvas, image);
@@ -84,20 +106,7 @@ class Background extends Drawable {
         this.speed = speed;
     }
 
-    init() {
-        // TODO: Make DRY
-        if(!this.canvas.getContext) return false;
-        this.context = this.canvas.getContext('2d');
-        return true;
-    }
-
     draw() {
-        // TODO: Refactor into separate entity
-        //
-        // this.context.fillStyle = 'black'
-        // this.context.fillRect(0, 0, this.canvas.width, this.canvas.height);
-        //
-
         this.x += this.speed.x;
         this.y += this.speed.y;
 
@@ -137,10 +146,10 @@ class Game {
         console.log('INIT GAME')
 
         this.background = new Background(0, 0, {x: 0, y: 0}, 'canvas.bg', this.images.loadImage('black.png'));
-        this.bg2 = new Background(0, 0, {x: -1, y: 0}, 'canvas.bg', this.images.loadImage('stars_big.png'));
-        this.bg3 = new Background(0, 0, {x: -2, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png'));
+        this.bg2 = new Background(0, 0, {x: -4, y: 0}, 'canvas.bg', this.images.loadImage('stars_big.png'));
+        this.bg3 = new Background(0, 0, {x: -3, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png'));
 
-        this.player = new Drawable(128, 128, 'canvas.bg', this.images.loadImage('player.png'));
+        this.player = new Player(128, 128, 3, 'canvas.player', this.images.loadImage('player.png'));
 
         return this.background.init() && this.player.init(), this.bg2.init(), this.bg3.init();
     }
@@ -156,9 +165,45 @@ class Game {
         this.background.draw();
         this.bg3.draw();
         this.bg2.draw();
+
+        this.player.move();
         this.player.draw();
     }
 }
+
+
+// Keyboard input
+//
+var input = { up: 0, down: 0, left: 0, right: 0 };
+
+function handleInput(e, val) {
+    e.preventDefault();
+    var key = (e.keyCode) ? e.keyCode : e.charCode;
+
+    // TODO: fix conflict between arrow keys and WASD, or pick one
+
+    switch(key) {
+        case 38:
+        case 87:
+            input.up = val;
+            break;
+        case 40:
+        case 83:
+            input.down = val;
+            break;
+        case 37:
+        case 65:
+            input.left = val;
+            break;
+        case 39:
+        case 68:
+            input.right = val;
+            break;
+    }
+}
+
+document.onkeydown = e => { handleInput(e, 1) };
+document.onkeyup = e => { handleInput(e, 0) };
 
 
 // The Game
