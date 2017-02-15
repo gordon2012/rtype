@@ -4,6 +4,7 @@ require('file-loader?name=[name].[ext]!./images/black.png');
 require('file-loader?name=[name].[ext]!./images/player.png');
 require('file-loader?name=[name].[ext]!./images/stars_big.png');
 require('file-loader?name=[name].[ext]!./images/stars_small.png');
+require('file-loader?name=[name].[ext]!./images/laserGreen10.png');
 // TODO: Figure out better way of loading images
 
 
@@ -78,25 +79,59 @@ class Drawable extends Entity {
     draw() {
         if(this.image) this.context.drawImage(this.image, this.x, this.y);
     }
+
+    clear() {
+        const [w, h] = [this.image.width, this.image.height];
+        this.context.clearRect(this.x, this.y, w, h);
+    }
 }
 
-class Player extends Drawable {
-    constructor(x, y, speed, canvas, image) { // TODO: speed as object with acceleration and maxVelocity?
+class Bullet extends Drawable {
+    constructor(x, y, canvas, speed, image) {
         super(x, y, canvas, image);
+
         this.speed = speed;
     }
 
     move() {
-        const [w, h] = [this.image.width, this.image.height]
-        this.context.clearRect(this.x, this.y, w, h);
+        this.clear();
+        this.x+= this.speed;
+    }
+}
+
+class Player extends Drawable {
+    constructor(x, y, speed, canvas, image) {
+        // TODO: speed as object with acceleration and maxVelocity?
+        super(x, y, canvas, image);
+        this.speed = speed;
+
+        this.cooldown = 0;
+    }
+
+    move() {
+        const [w, h] = [this.image.width, this.image.height];
+        this.clear();
 
         this.x += this.speed * (input.right - input.left);
         this.y += this.speed * (input.down - input.up);
 
         this.x = Math.min(this.canvas.width - w, Math.max(0, this.x));
-        this.y = Math.min(this.canvas.height - h, Math.max(0, this.y));
-    }
+        this.y = Math.min(this.canvas.height - h/2, Math.max(-h/2, this.y));
 
+        if(input.shoot && this.cooldown == 0) {
+            this.cooldown = 15;
+
+            if(this.bullet && this.bullet.alive) this.bullet.clear();
+            this.bullet = new Bullet(this.x + w/2, this.y + h/2 - 6  , 'canvas.player', 15, game.images.loadImage('laserGreen10.png'));
+            this.bullet.alive = this.bullet.init();
+        }
+        this.cooldown = Math.max(0, this.cooldown - 1);
+
+        if(this.bullet && this.bullet.alive) {
+            this.bullet.move();
+            this.bullet.draw();
+        }
+    }
 }
 
 class Background extends Drawable {
@@ -135,7 +170,7 @@ class Game {
     run() {
         this.images = new ImageController();
 
-        this.images.fetchImages(['player.png', 'black.png', 'stars_big.png', 'stars_small.png'], () => {
+        this.images.fetchImages(['player.png', 'black.png', 'stars_big.png', 'stars_small.png', 'laserGreen10.png'], () => {
             if(this.init()) {
                 this.start();
             }
@@ -151,7 +186,9 @@ class Game {
 
         this.player = new Player(128, 128, 3, 'canvas.player', this.images.loadImage('player.png'));
 
-        return this.background.init() && this.player.init(), this.bg2.init(), this.bg3.init();
+        // TODO: Add entity management and lifecycle system
+        //
+        return this.background.init() && this.player.init() && this.bg2.init() && this.bg3.init();
     }
 
     start() {
@@ -174,13 +211,14 @@ class Game {
 
 // Keyboard input
 //
-var input = { up: 0, down: 0, left: 0, right: 0 };
+var input = { up: 0, down: 0, left: 0, right: 0, shoot: 0 };
 
 function handleInput(e, val) {
     e.preventDefault();
     var key = (e.keyCode) ? e.keyCode : e.charCode;
 
     // TODO: fix conflict between arrow keys and WASD, or pick one
+    // console.log(key);
 
     switch(key) {
         case 38:
@@ -199,6 +237,8 @@ function handleInput(e, val) {
         case 68:
             input.right = val;
             break;
+        case 32:
+            input.shoot = val;
     }
 }
 
