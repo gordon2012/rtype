@@ -1,6 +1,7 @@
 require('file-loader?name=[name].[ext]!./index.html');
 require('./style.css');
 require('file-loader?name=[name].[ext]!./images/purple.png');
+require('file-loader?name=[name].[ext]!./images/blue.png');
 require('file-loader?name=[name].[ext]!./images/player.png');
 require('file-loader?name=[name].[ext]!./images/debug.png');
 // TODO: Figure out better way of loading images
@@ -43,7 +44,6 @@ class ImageController {
     loadImage(path) {
         return this.images[path];
     }
-
 }
 
 
@@ -54,30 +54,41 @@ class ImageController {
 //
 class Entity {
     constructor(x, y) {
-        // TODO: Also have init()?
         this.x = x;
         this.y = y;
     }
 }
 
 class Drawable extends Entity {
-    constructor(x, y, canvas, context, image) {
+    constructor(x, y, canvas, image) {
         super(x, y);
-
-        this.canvas = canvas;
-        this.context = context;
+        this.canvas = document.querySelector(canvas);
         this.image = image;
     }
+
+    init() {
+        if(!this.canvas.getContext) return false;
+        this.context = this.canvas.getContext('2d');
+        return true;
+    }
+
     draw() {
         if(this.image) this.context.drawImage(this.image, this.x, this.y);
     }
 }
 
 class Background extends Drawable {
-    constructor(x, y, speed, canvas, context, image) {
-        super(x, y, canvas, context, image);
+    constructor(x, y, speed, canvas, image) {
+        super(x, y, canvas, image);
 
         this.speed = speed;
+    }
+
+    init() {
+        // TODO: Make DRY
+        if(!this.canvas.getContext) return false;
+        this.context = this.canvas.getContext('2d');
+        return true;
     }
 
     draw() {
@@ -110,7 +121,6 @@ class Background extends Drawable {
 class Game {
     constructor() {
         // TODO: Find better way to manage canvases, maybe parameters of the constructor? config object?
-        this.bgCanvas = document.querySelector('canvas.bg');
     }
 
     run() {
@@ -125,14 +135,11 @@ class Game {
 
     init() {
         console.log('INIT GAME')
-        if(this.bgCanvas.getContext) {
-            this.bgContext = this.bgCanvas.getContext('2d');
 
-            this.background = new Background(0, 0, {x: -3, y: 1}, this.bgCanvas, this.bgContext, this.images.loadImage('purple.png'));
-            this.player = new Drawable(128, 128, this.bgCanvas, this.bgContext, this.images.loadImage('player.png'));
+        this.background = new Background(0, 0, {x: 1, y: 1}, 'canvas.bg', this.images.loadImage('purple.png'));
+        this.player = new Drawable(128, 128, 'canvas.bg', this.images.loadImage('player.png'));
 
-            return true;
-        } else return false;
+        return this.background.init() && this.player.init();
     }
 
     start() {
