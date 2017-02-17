@@ -50,7 +50,6 @@ class ImageController {
 // TODO: Add separate object that contains the canvas and context so each
 //  image does not have to call getContext('2d') on init
 
-
 // Entity hierarchy. Currently consists of:
 //   - Entity: base object that could be used as an invisible or controller object
 //   - Drawable: basic object for screen entities
@@ -165,6 +164,13 @@ class Background extends Drawable {
 class Game {
     constructor() {
         // TODO: Find better way to manage canvases, maybe parameters of the constructor? config object?
+
+        this.entities = [];
+    }
+
+    addEntity(ent) {
+        this.entities.push(ent);
+        return ent.init();
     }
 
     run() {
@@ -180,15 +186,14 @@ class Game {
     init() {
         console.log('INIT GAME')
 
-        this.background = new Background(0, 0, {x: 0, y: 0}, 'canvas.bg', this.images.loadImage('black.png'));
-        this.bg2 = new Background(0, 0, {x: -4, y: 0}, 'canvas.bg', this.images.loadImage('stars_big.png'));
-        this.bg3 = new Background(0, 0, {x: -3, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png'));
+        var success = true;
 
-        this.player = new Player(128, 128, 3, 'canvas.player', this.images.loadImage('player.png'));
+        success = success && this.addEntity(new Background(0, 0, {x: 0, y: 0}, 'canvas.bg', this.images.loadImage('black.png')));
+        success = success && this.addEntity(new Background(0, 0, {x: -4, y: 0}, 'canvas.bg', this.images.loadImage('stars_big.png')));
+        success = success && this.addEntity(new Background(0, 0, {x: -3, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png')));
+        success = success && this.addEntity(new Player(128, 128, 3, 'canvas.player', this.images.loadImage('player.png')));
 
-        // TODO: Add entity management and lifecycle system
-        //
-        return this.background.init() && this.player.init() && this.bg2.init() && this.bg3.init();
+        return success;
     }
 
     start() {
@@ -199,12 +204,10 @@ class Game {
     animate() {
         window.requestAnimationFrame(() => this.animate());
         
-        this.background.draw();
-        this.bg3.draw();
-        this.bg2.draw();
-
-        this.player.move();
-        this.player.draw();
+        this.entities.forEach(entity => {
+            if(entity.move) entity.move();
+            if(entity.draw) entity.draw();
+        });
     }
 }
 
