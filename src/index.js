@@ -25,14 +25,12 @@ class ImageController {
 
             img.addEventListener('load', () => {
                 this.success++;
-                console.log(`SUCCESS: ${e} (${this.success})`);
                 if(this.success + this.fail == list.length)
                     callback();
             });
 
             img.addEventListener('error', () => {
                 this.success++;
-                console.log(`FAIL: ${e} (${this.fail})`);
                 if(this.success + this.fail == list.length)
                     callback();
             });
@@ -95,6 +93,10 @@ class Bullet extends Drawable {
     move() {
         this.clear();
         this.x+= this.speed;
+
+        // Only works for player bullets so far
+        //
+        if(this.x > this.canvas.width) this.alive = false;
     }
 }
 
@@ -105,6 +107,9 @@ class Player extends Drawable {
         this.speed = speed;
 
         this.cooldown = 0;
+
+        this.pool = new Pool();
+        game.addEntity(this.pool);
     }
 
     move() {
@@ -119,19 +124,61 @@ class Player extends Drawable {
 
         if(input.shoot && this.cooldown == 0) {
             this.cooldown = 15;
-
-            if(this.bullet && this.bullet.alive) this.bullet.clear();
-            this.bullet = new Bullet(this.x + w/2, this.y + h/2 - 6  , 'canvas.player', 15, game.images.loadImage('laserGreen10.png'));
-            this.bullet.alive = this.bullet.init();
+            this.pool.add(new Bullet(this.x + w/2, this.y + h/2 - 6  , 'canvas.player-pool', 15, game.images.loadImage('laserGreen10.png')));
         }
         this.cooldown = Math.max(0, this.cooldown - 1);
-
-        if(this.bullet && this.bullet.alive) {
-            this.bullet.move();
-            this.bullet.draw();
-        }
     }
 }
+
+// Pool object that acts as an array of reusable entities such as bullets
+//
+// TODO: add target, step, and timeout for array expansion/contraction
+//
+class Pool {  
+    constructor() {
+        this.entities = [];
+        // arbitrary max(target) for now is 10
+        this.target = 10;
+    }
+
+    init() {
+        return true;
+    }
+
+    add(entity) {
+        if(this.entities.length < this.target) {
+            this.entities.push(entity);
+            entity.alive = entity.init();
+            return entity.alive;
+        } else {
+            var deads = this.entities.filter(e => !e.alive);
+            if(deads.length > 0) {
+                [deads[0].x, deads[0].y] = [entity.x, entity.y];
+                deads[0].alive = true;
+                return true;
+            } else {
+                // Should be unreachable because the current bullet speed and cooldown
+                // do not allow 10 bullets on the screen
+                //
+                // TODO: expand the array as needed
+                console.log('NO FREE SPACE');
+            }
+        }
+    }
+
+    move() {
+        this.entities.forEach(entity => {
+            if(entity.alive && entity.move) entity.move();
+        });
+    }
+
+    draw() {
+        this.entities.forEach(entity => {
+            if(entity.alive && entity.draw) entity.draw();
+        });
+    }
+}
+
 
 class Background extends Drawable {
     constructor(x, y, speed, canvas, image) {
@@ -160,11 +207,13 @@ class Background extends Drawable {
     }
 }
 
-
+// Singleton object that represents the game itself to avoid polluting the global namespace
+//
+// TODO: Find better way to manage canvases, maybe parameters of the constructor? config object?
+// TODO: Actually use the singleton pattern (or not at all?)
+//
 class Game {
     constructor() {
-        // TODO: Find better way to manage canvases, maybe parameters of the constructor? config object?
-
         this.entities = [];
     }
 
@@ -184,20 +233,16 @@ class Game {
     }
 
     init() {
-        console.log('INIT GAME')
-
         var success = true;
 
         success = success && this.addEntity(new Background(0, 0, {x: 0, y: 0}, 'canvas.bg', this.images.loadImage('black.png')));
         success = success && this.addEntity(new Background(0, 0, {x: -4, y: 0}, 'canvas.bg', this.images.loadImage('stars_big.png')));
         success = success && this.addEntity(new Background(0, 0, {x: -3, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png')));
         success = success && this.addEntity(new Player(128, 128, 3, 'canvas.player', this.images.loadImage('player.png')));
-
         return success;
     }
 
     start() {
-        console.log('START GAME')
         this.animate();
     }
 
@@ -214,14 +259,13 @@ class Game {
 
 // Keyboard input
 //
+// TODO: fix conflict between arrow keys and WASD, or pick one
+//
 var input = { up: 0, down: 0, left: 0, right: 0, shoot: 0 };
 
 function handleInput(e, val) {
     e.preventDefault();
     var key = (e.keyCode) ? e.keyCode : e.charCode;
-
-    // TODO: fix conflict between arrow keys and WASD, or pick one
-    // console.log(key);
 
     switch(key) {
         case 38:
