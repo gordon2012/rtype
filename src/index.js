@@ -46,6 +46,7 @@ class ImageController {
     }
 }
 
+
 // TODO: Add separate object that contains the canvas and context so each
 //  image does not have to call getContext('2d') on init
 
@@ -60,6 +61,7 @@ class Entity {
         this.y = y;
     }
 }
+
 
 class Drawable extends Entity {
     constructor(x, y, canvas, image) {
@@ -84,6 +86,7 @@ class Drawable extends Entity {
     }
 }
 
+
 class Bullet extends Drawable {
     constructor(x, y, canvas, speed, image) {
         super(x, y, canvas, image);
@@ -101,16 +104,28 @@ class Bullet extends Drawable {
     }
 }
 
+
 class Player extends Drawable {
     constructor(x, y, speed, canvas, image) {
         // TODO: speed as object with acceleration and maxVelocity?
         super(x, y, canvas, image);
         this.speed = speed;
+        this.isCollider = true;
 
         this.cooldown = 0;
 
         this.pool = new Pool();
         game.addEntity(this.pool);
+    }
+
+    doCollision(other) {
+        // TODO: Collision entity conflict resolution, for now the player decides the logic, but
+        //       will eventually have bullets and other entities colliding
+        //
+        this.clear();
+        this.x = 128;
+        this.y = 128;
+        other.reset();
     }
 
     move() {
@@ -131,38 +146,47 @@ class Player extends Drawable {
     }
 }
 
+
 class Enemy extends Drawable {
     constructor(x, y, canvas, image) {
         super(x, y, canvas, image);
 
         this.speed = -3;
+        this.isCollider = true;
     }
 
     init() {
         return super.init();
     }
 
-    move() {
+    reset() {
         const [w, h, cw, ch] = [this.image.width, this.image.height, this.canvas.width, this.canvas.height];
+        this.clear();
 
+        this.x = cw;
+        this.y = Math.random() * (ch - h);
+
+        this.speed = Math.max(-10, this.speed - 0.5);
+    }
+
+    move() {
         this.clear();
         this.x+= this.speed;
 
-        if(this.x < -w) {
-            this.x = cw;
-            this.y = Math.random() * (ch - h);
-
-            this.speed = Math.max(-10, this.speed - 0.5);
+        if(this.x < -this.image.width) {
+            this.reset();
         }
     }
 }
+
 
 // Pool object that acts as an array of reusable entities such as bullets
 //
 // TODO: add target, step, and timeout for array expansion/contraction
 //
-class Pool {  
+class Pool extends Entity {
     constructor() {
+        super(0,0);
         this.entities = [];
         // arbitrary max(target) for now is 10
         this.target = 10;
@@ -278,9 +302,21 @@ class Game {
     animate() {
         window.requestAnimationFrame(() => this.animate());
         
-        this.entities.forEach(entity => {
+        this.entities.forEach((entity, ei) => {
             if(entity.move) entity.move();
             if(entity.draw) entity.draw();
+
+            // Collision detection
+            //
+            if(entity.isCollider) {
+                this.entities.forEach((other, oi) => {
+                    if(ei != oi && other.isCollider) {
+                        const [ex, ey, ew, eh, ox, oy, ow, oh] = [entity.x, entity.y, entity.image.width, entity.image.height, other.x, other.y, other.image.width, other.image.height];
+                        if(ex < ox + ow && ex + ew > ox && ey < oy + oh && ey + eh > oy)
+                            if(entity.doCollision) entity.doCollision(other);
+                    }
+                });
+            }
         });
     }
 }
