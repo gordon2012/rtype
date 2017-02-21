@@ -51,9 +51,13 @@ class ImageController {
 //  image does not have to call getContext('2d') on init
 
 // Entity hierarchy. Currently consists of:
-//   - Entity: base object that could be used as an invisible or controller object
-//   - Drawable: basic object for screen entities
-//   - Background: specialized scrolling background entity
+// - Entity: base object that could be used as an invisible or controller object
+// - Drawable: basic object for screen entities
+// - Bullet: projectiles launched from player (so far) inside a Pool object
+// - Player: The player's avatar
+// - Enemy: Meteor object that can collide with the player and her bullets
+// - Pool: Object that contains reusable bullet objects (so far)
+// - Background: specialized scrolling background entity
 //
 class Entity {
     constructor(x, y) {
@@ -92,6 +96,13 @@ class Bullet extends Drawable {
         super(x, y, canvas, image);
 
         this.speed = speed;
+        this.isCollider = true;
+    }
+
+    doCollision(other) {
+        if(other.tag == 'player') return;
+        this.alive = false;
+        this.clear();
     }
 
     move() {
@@ -110,22 +121,20 @@ class Player extends Drawable {
         // TODO: speed as object with acceleration and maxVelocity?
         super(x, y, canvas, image);
         this.speed = speed;
-        this.isCollider = true;
-
         this.cooldown = 0;
+
+        this.isCollider = true;
+        this.tag = 'player';
 
         this.pool = new Pool();
         game.addEntity(this.pool);
     }
 
     doCollision(other) {
-        // TODO: Collision entity conflict resolution, for now the player decides the logic, but
-        //       will eventually have bullets and other entities colliding
-        //
+        if(this.pool.entities.includes(other)) return;
         this.clear();
         this.x = 128;
         this.y = 128;
-        other.reset();
     }
 
     move() {
@@ -159,14 +168,22 @@ class Enemy extends Drawable {
         return super.init();
     }
 
-    reset() {
+    doCollision(other) {
+        if(other.tag == 'player') {
+            this.reset(0);
+        } else if(other.alive) {
+            this.reset(0.5);
+        }
+    }
+
+    reset(inc) {
         const [w, h, cw, ch] = [this.image.width, this.image.height, this.canvas.width, this.canvas.height];
         this.clear();
 
         this.x = cw;
         this.y = Math.random() * (ch - h);
 
-        this.speed = Math.max(-10, this.speed - 0.5);
+        this.speed = Math.min(Math.max(-10, this.speed + inc), -3);
     }
 
     move() {
@@ -174,7 +191,7 @@ class Enemy extends Drawable {
         this.x+= this.speed;
 
         if(this.x < -this.image.width) {
-            this.reset();
+            this.reset(-0.5);
         }
     }
 }
@@ -190,6 +207,7 @@ class Pool extends Entity {
         this.entities = [];
         // arbitrary max(target) for now is 10
         this.target = 10;
+        this.isPool = true;
     }
 
     init() {
@@ -302,19 +320,39 @@ class Game {
     animate() {
         window.requestAnimationFrame(() => this.animate());
         
+        const checkCollision = (entity, other) => {
+            const [ex, ey, ew, eh, ox, oy, ow, oh] = [entity.x, entity.y, entity.image.width, entity.image.height, other.x, other.y, other.image.width, other.image.height];
+            if(ex < ox + ow && ex + ew > ox && ey < oy + oh && ey + eh > oy)
+                if(entity.doCollision) {
+                    this.collisions.push([entity, other])
+                }
+        }
+
         this.entities.forEach((entity, ei) => {
             if(entity.move) entity.move();
             if(entity.draw) entity.draw();
 
             // Collision detection
             //
+            // TODO: Better collision entity conflict resolution
+            //
+            this.collisions = [];
             if(entity.isCollider) {
                 this.entities.forEach((other, oi) => {
                     if(ei != oi && other.isCollider) {
-                        const [ex, ey, ew, eh, ox, oy, ow, oh] = [entity.x, entity.y, entity.image.width, entity.image.height, other.x, other.y, other.image.width, other.image.height];
-                        if(ex < ox + ow && ex + ew > ox && ey < oy + oh && ey + eh > oy)
-                            if(entity.doCollision) entity.doCollision(other);
+                        checkCollision(entity, other);
+
+                    } else if(other.isPool) {
+                        other.entities.forEach((poolother) => {
+                            checkCollision(entity, poolother)
+                        });
                     }
+                });
+            }
+            if(this.collisions.length) {
+                this.collisions.forEach(colliders => {
+                    colliders[0].doCollision(colliders[1]);
+                    colliders[1].doCollision(colliders[0]);
                 });
             }
         });
