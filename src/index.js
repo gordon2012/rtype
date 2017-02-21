@@ -5,6 +5,7 @@ require('file-loader?name=[name].[ext]!./images/player.png');
 require('file-loader?name=[name].[ext]!./images/stars_big.png');
 require('file-loader?name=[name].[ext]!./images/stars_small.png');
 require('file-loader?name=[name].[ext]!./images/laserGreen10.png');
+require('file-loader?name=[name].[ext]!./images/meteorBrown_big1.png');
 // TODO: Figure out better way of loading images
 
 
@@ -130,6 +131,32 @@ class Player extends Drawable {
     }
 }
 
+class Enemy extends Drawable {
+    constructor(x, y, canvas, image) {
+        super(x, y, canvas, image);
+
+        this.speed = -3;
+    }
+
+    init() {
+        return super.init();
+    }
+
+    move() {
+        const [w, h, cw, ch] = [this.image.width, this.image.height, this.canvas.width, this.canvas.height];
+
+        this.clear();
+        this.x+= this.speed;
+
+        if(this.x < -w) {
+            this.x = cw;
+            this.y = Math.random() * (ch - h);
+
+            this.speed = Math.max(-10, this.speed - 0.5);
+        }
+    }
+}
+
 // Pool object that acts as an array of reusable entities such as bullets
 //
 // TODO: add target, step, and timeout for array expansion/contraction
@@ -225,7 +252,7 @@ class Game {
     run() {
         this.images = new ImageController();
 
-        this.images.fetchImages(['player.png', 'black.png', 'stars_big.png', 'stars_small.png', 'laserGreen10.png'], () => {
+        this.images.fetchImages(['player.png', 'black.png', 'stars_big.png', 'stars_small.png', 'laserGreen10.png', 'meteorBrown_big1.png'], () => {
             if(this.init()) {
                 this.start();
             }
@@ -239,6 +266,8 @@ class Game {
         success = success && this.addEntity(new Background(0, 0, {x: -4, y: 0}, 'canvas.bg', this.images.loadImage('stars_big.png')));
         success = success && this.addEntity(new Background(0, 0, {x: -3, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png')));
         success = success && this.addEntity(new Player(128, 128, 3, 'canvas.player', this.images.loadImage('player.png')));
+        success = success && this.addEntity(new Enemy(800, 128, 'canvas.enemy', this.images.loadImage('meteorBrown_big1.png')));
+
         return success;
     }
 

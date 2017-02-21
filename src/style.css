@@ -20,3 +20,7 @@ canvas {
 .player {
     z-index: -1;
 }
+
+.enemy {
+    z-index: 0
+}
