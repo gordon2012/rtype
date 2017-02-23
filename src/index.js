@@ -64,6 +64,14 @@ class Entity {
         this.x = x;
         this.y = y;
     }
+
+    move() {
+
+    }
+
+    draw() {
+
+    }
 }
 
 
@@ -101,17 +109,27 @@ class Bullet extends Drawable {
 
     doCollision(other) {
         if(other.tag == 'player') return;
-        this.alive = false;
-        this.clear();
+        this.kill();
     }
 
     move() {
+        if(!this.alive) return;
         this.clear();
         this.x+= this.speed;
 
         // Only works for player bullets so far
         //
-        if(this.x > this.canvas.width) this.alive = false;
+        if(this.x > this.canvas.width) this.kill();//this.alive = false;
+    }
+
+    draw() {
+        if(!this.alive) return;
+        super.draw();
+    }
+
+    kill() {
+        this.clear();
+        this.alive = false;
     }
 }
 
@@ -237,13 +255,13 @@ class Pool extends Entity {
 
     move() {
         this.entities.forEach(entity => {
-            if(entity.alive && entity.move) entity.move();
+            entity.move();
         });
     }
 
     draw() {
         this.entities.forEach(entity => {
-            if(entity.alive && entity.draw) entity.draw();
+            entity.draw();
         });
     }
 }
@@ -329,8 +347,8 @@ class Game {
         }
 
         this.entities.forEach((entity, ei) => {
-            if(entity.move) entity.move();
-            if(entity.draw) entity.draw();
+            entity.move();
+            entity.draw();
 
             // Collision detection
             //
