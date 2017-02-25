@@ -6,6 +6,7 @@ require('file-loader?name=[name].[ext]!./images/stars_big.png');
 require('file-loader?name=[name].[ext]!./images/stars_small.png');
 require('file-loader?name=[name].[ext]!./images/laserGreen10.png');
 require('file-loader?name=[name].[ext]!./images/meteorBrown_big1.png');
+require('file-loader?name=[name].[ext]!./images/box.png');
 // TODO: Figure out better way of loading images
 // TODO: Add separate object that contains the canvas and context so each
 //  image does not have to call getContext('2d') on init
@@ -15,6 +16,8 @@ import ImageController from './ImageController';
 import Player from './Player';
 import Enemy from './Enemy';
 import Background from './Background';
+
+import Drawable from './Drawable';
 
 
 // Singleton object that represents the game itself to avoid polluting the global namespace
@@ -35,7 +38,7 @@ class Game {
     run() {
         this.images = new ImageController();
 
-        this.images.fetchImages(['player.png', 'black.png', 'stars_big.png', 'stars_small.png', 'laserGreen10.png', 'meteorBrown_big1.png'], () => {
+        this.images.fetchImages(['player.png', 'black.png', 'stars_big.png', 'stars_small.png', 'laserGreen10.png', 'meteorBrown_big1.png', 'box.png'], () => {
             if(this.init()) {
                 this.start();
             }
@@ -50,6 +53,8 @@ class Game {
         success = success && this.addEntity(new Background(0, 0, {x: -3, y: 0}, 'canvas.bg', this.images.loadImage('stars_small.png')));
         success = success && this.addEntity(new Player(this, input, 128, 128, 3, 'canvas.player', this.images.loadImage('player.png')));
         success = success && this.addEntity(new Enemy(800, 128, 'canvas.enemy', this.images.loadImage('meteorBrown_big1.png')));
+
+        success = success && this.addEntity(new Drawable(256, 512, 'canvas.enemy', this.images.loadImage('box.png')));
 
         return success;
     }
