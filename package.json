@@ -6,7 +6,7 @@
   "scripts": {
     "start": "webpack-dev-server --open",
     "build": "webpack",
-    "deploy": "npm run build && surge build rtype.gordondoskas.com"
+    "deploy": "npm run build && surge build rtype.gurudreams.win"
   },
   "repository": {
     "type": "git",
